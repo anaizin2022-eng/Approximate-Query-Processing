@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🌌 DATA FORGE v2 — 星際數據精煉廠</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700;900&family=Noto+Sans+TC:wght@300;400;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+:root{
+  --bg:#05050a;--panel:#080d18;--panel2:#0c1220;
+  --cyan:#00f0ff;--cy-g:rgba(0,240,255,0.12);--cy-b:rgba(0,240,255,0.45);
+  --pink:#ff003c;--pk-g:rgba(255,0,60,0.12);--pk-b:rgba(255,0,60,0.45);
+  --yell:#fcee0a;--yl-g:rgba(252,238,10,0.12);
+  --green:#39ff14;--gr-g:rgba(57,255,20,0.12);
+  --purple:#b44fff;
+  --text:#d8e4f0;--muted:#506070;
+  --mono:'Share Tech Mono',monospace;
+  --head:'Orbitron','Noto Sans TC',sans-serif;
+  --body:'Noto Sans TC',sans-serif;
+  --r:10px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;background:var(--bg);color:var(--text);overflow:hidden;font-family:var(--body)}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:#111}::-webkit-scrollbar-thumb{background:#334}
+#bg-canvas{position:fixed;inset:0;z-index:0;pointer-events:none}
+
+/* ─── SCREEN SYSTEM ─── */
+.screen{position:fixed;inset:0;z-index:10;display:none;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+.screen.show{display:flex}
+
+/* ═══════════════════════════════
+   INTRO SCREEN
+═══════════════════════════════ */
+.logo{font-family:var(--head);font-size:clamp(28px,5vw,64px);font-weight:900;letter-spacing:6px;
+  background:linear-gradient(135deg,#00f0ff 0%,#fcee0a 50%,#ff003c 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  text-align:center;line-height:1.1;margin-bottom:6px}
+.logo-sub{font-family:var(--mono);font-size:13px;color:var(--cyan);letter-spacing:4px;text-align:center;margin-bottom:32px}
+
+.intro-brief{background:rgba(8,13,24,.9);border:1px solid var(--cy-b);border-left:4px solid var(--cyan);
+  border-radius:4px 12px 12px 4px;padding:28px 32px;max-width:640px;backdrop-filter:blur(12px);
+  box-shadow:0 8px 40px rgba(0,240,255,.1);margin-bottom:28px}
+.brief-ttl{font-family:var(--mono);font-size:12px;color:var(--yell);letter-spacing:2px;margin-bottom:14px}
+.brief-body{font-size:14.5px;line-height:1.85;color:#90a8b8}
+.brief-body b{color:var(--cyan)}.brief-body .hi{color:var(--pink)}
+.brief-body .steps{margin-top:14px;display:flex;flex-direction:column;gap:8px}
+.step-row{display:flex;align-items:flex-start;gap:10px;font-size:13.5px}
+.step-num{background:var(--cy-g);border:1px solid var(--cy-b);border-radius:50%;width:26px;height:26px;
+  display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;color:var(--cyan);flex-shrink:0;margin-top:1px}
+
+.start-btn{font-family:var(--head);font-size:16px;letter-spacing:3px;padding:14px 44px;border-radius:8px;border:none;
+  background:linear-gradient(45deg,#00c8ff,#0066ff);color:#000;font-weight:900;cursor:pointer;
+  box-shadow:0 0 24px rgba(0,200,255,0.5);transition:all .3s;text-transform:uppercase}
+.start-btn:hover{transform:scale(1.05) translateY(-2px);box-shadow:0 0 44px var(--cyan)}
+
+/* ═══════════════════════════════
+   MAIN GAME
+═══════════════════════════════ */
+#game-ui{flex-direction:row;padding:0;background:none;pointer-events:none;align-items:stretch;justify-content:flex-start}
+
+/* Progress nav */
+.progress-nav{width:72px;background:rgba(5,8,15,.97);border-right:1px solid rgba(255,255,255,.06);
+  display:flex;flex-direction:column;align-items:center;padding:20px 0;gap:8px;pointer-events:auto;z-index:30;flex-shrink:0}
+.prog-logo{font-family:var(--head);font-size:8px;color:var(--muted);letter-spacing:2px;writing-mode:vertical-rl;
+  text-orientation:mixed;margin-bottom:20px;opacity:.5}
+.nav-dot{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  font-size:18px;border:1px solid #222;color:var(--muted);transition:all .3s;cursor:default;position:relative}
+.nav-dot.done{border-color:var(--green);background:var(--gr-g);color:var(--green)}
+.nav-dot.active{border-color:var(--cyan);background:var(--cy-g);color:var(--cyan);
+  box-shadow:0 0 16px var(--cy-b)}
+.nav-dot .dot-lbl{position:absolute;bottom:-18px;font-family:var(--mono);font-size:9px;white-space:nowrap;color:var(--muted)}
+
+/* Left panel */
+.panel-left{width:440px;background:rgba(5,8,15,.96);border-right:1px solid rgba(255,255,255,.06);
+  display:flex;flex-direction:column;pointer-events:auto;z-index:20;backdrop-filter:blur(10px);
+  box-shadow:20px 0 50px rgba(0,0,0,.4);overflow:hidden}
+.panel-right{flex:1;position:relative;pointer-events:none}
+
+.stage-content{display:none;flex-direction:column;gap:16px;padding:20px;overflow-y:auto;height:100%}
+.stage-content.active{display:flex}
+
+/* Shared components */
+.stage-tag{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:2px}
+.stage-title{font-family:var(--head);font-size:18px;margin-top:2px;line-height:1.2}
+.stage-title.t-pink{color:var(--pink);text-shadow:0 0 10px var(--pk-b)}
+.stage-title.t-cyan{color:var(--cyan);text-shadow:0 0 10px var(--cy-b)}
+.stage-title.t-yell{color:var(--yell);text-shadow:0 0 10px rgba(252,238,10,.4)}
+
+.info-box{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);
+  border-radius:8px;padding:14px;font-size:13px;line-height:1.75;color:#8899aa}
+.info-box b{color:var(--text)}.info-box.alert{border-color:var(--pk-b);background:var(--pk-g);color:#cc8899}
+.info-box.success{border-color:rgba(57,255,20,.3);background:var(--gr-g);color:#88bb88}
+
+/* Formula box */
+.formula-box{background:#040810;border:1px solid #1a2a3a;border-radius:10px;padding:16px;font-family:var(--mono)}
+.fbox-title{font-size:10px;color:var(--muted);letter-spacing:2px;margin-bottom:12px}
+.formula{font-size:14px;color:#7ab8d8;margin:6px 0;line-height:1.7}
+.formula .var{color:var(--cyan)}.formula .val{color:var(--yell);transition:all .2s}
+.formula .new{color:var(--green)}.formula .op{color:var(--muted)}
+.formula-highlight{animation:flashGreen .5s ease}
+@keyframes flashGreen{0%{color:var(--green);text-shadow:0 0 8px var(--green)}100%{color:var(--yell)}}
+
+/* Memory bars */
+.mem-section{display:flex;flex-direction:column;gap:8px}
+.mem-row{display:flex;flex-direction:column;gap:4px}
+.mem-label-row{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--muted)}
+.mem-bar-wrap{height:16px;background:#0a0f1a;border-radius:8px;overflow:hidden;border:1px solid #1a2530;position:relative}
+.mem-bar{height:100%;width:5%;border-radius:8px;transition:width .15s, background .3s}
+.mem-bar.bad{background:var(--pink);box-shadow:inset 0 0 8px rgba(255,0,60,.4)}
+.mem-bar.bad.pulse{animation:memPulse .3s ease}
+@keyframes memPulse{0%{box-shadow:inset 0 0 8px rgba(255,0,60,.4),0 0 20px var(--pink)}100%{box-shadow:inset 0 0 8px rgba(255,0,60,.4)}}
+.mem-bar.good{background:var(--green);box-shadow:inset 0 0 8px rgba(57,255,20,.3)}
+.mem-bar.sleeping{background:#334;width:8%!important}
+.mem-lbl-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:10px;font-weight:bold;color:rgba(255,255,255,.8);text-shadow:1px 1px 2px #000}
+
+/* Step-by-step demo */
+.demo-input-row{display:flex;gap:8px;align-items:center}
+.demo-input{flex:1;background:#0a0f1a;border:1px solid #234;border-radius:6px;
+  padding:10px 12px;color:var(--cyan);font-family:var(--mono);font-size:15px;outline:none}
+.demo-input:focus{border-color:var(--cyan);box-shadow:0 0 12px rgba(0,240,255,.2)}
+.demo-btn{padding:10px 16px;border-radius:6px;border:1px solid var(--cyan);
+  background:var(--cy-g);color:var(--cyan);font-family:var(--mono);font-size:13px;cursor:pointer;
+  transition:all .2s;white-space:nowrap}
+.demo-btn:hover{background:var(--cyan);color:#000}
+
+/* Stats grid */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat-card{background:#0a0f1a;border:1px solid #1a2530;padding:14px 12px;border-radius:10px;text-align:center;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--cyan);opacity:.3}
+.stat-lbl{font-family:var(--mono);font-size:10px;color:var(--muted)}
+.stat-val{font-family:var(--mono);font-size:22px;color:var(--yell);margin-top:5px;
+  transition:all .2s}
+.stat-val.changed{animation:flashGreen .5s ease}
+
+/* Action & Next btns */
+.action-btn{width:100%;padding:13px;border-radius:8px;border:1px solid var(--cyan);background:var(--cy-g);
+  color:var(--cyan);font-family:var(--head);font-size:13px;letter-spacing:1px;cursor:pointer;
+  transition:all .3s;display:flex;justify-content:center;align-items:center;gap:8px}
+.action-btn:hover:not(.solved){background:var(--cyan);color:#000;box-shadow:0 0 20px var(--cy-b)}
+.action-btn.solved{background:var(--gr-g);border-color:var(--green);color:var(--green);pointer-events:none}
+
+.next-btn{width:100%;padding:14px;border-radius:8px;border:none;
+  background:linear-gradient(45deg,var(--yell),#ffa500);
+  color:#000;font-family:var(--head);font-size:14px;font-weight:bold;cursor:pointer;
+  display:none;animation:pulse 2s infinite;letter-spacing:1px}
+.next-btn:hover{transform:scale(1.01);box-shadow:0 4px 20px rgba(252,238,10,.4)}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(252,238,10,.5)}70%{box-shadow:0 0 0 10px rgba(252,238,10,0)}100%{box-shadow:0 0 0 0 rgba(252,238,10,0)}}
+
+/* CMS grid */
+.cms-wrap{background:#040810;border:1px solid #1a2a3a;border-radius:10px;padding:12px;overflow:hidden}
+.cms-hash-labels{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-bottom:4px}
+.cms-hash-lbl{font-family:var(--mono);font-size:9px;color:var(--muted);text-align:center}
+.cms-row{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-bottom:4px}
+.cms-cell{height:38px;display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:14px;color:var(--muted);border-radius:6px;
+  background:#0a0f1a;border:1px solid #1a2530;transition:all .25s}
+.cms-cell.bump{animation:cmsBump .4s ease}
+@keyframes cmsBump{0%{transform:scale(1.15);background:rgba(0,240,255,.3);border-color:var(--cyan);color:var(--cyan)}100%{transform:scale(1)}}
+.cms-cell.highlighted{border-color:var(--cyan);background:var(--cy-g);color:var(--cyan)}
+.cms-cell.is-min{border-color:var(--green);background:rgba(57,255,20,.2);color:var(--green);
+  font-weight:bold;box-shadow:0 0 10px rgba(57,255,20,.4)}
+.cms-row-label{font-family:var(--mono);font-size:10px;color:var(--muted);padding:2px 0;letter-spacing:1px}
+
+.alien-cards{display:flex;flex-direction:column;gap:6px}
+.alien-card{background:#0a0f1a;border:1px solid #1a2530;border-radius:8px;
+  display:flex;align-items:center;gap:12px;padding:12px;cursor:pointer;transition:all .2s}
+.alien-card:hover{border-color:var(--cyan);background:var(--cy-g)}
+.a-icon{font-size:22px}
+.a-name{font-size:13px;color:var(--text);flex:1}
+.a-count{font-family:var(--mono);font-size:16px;color:var(--yell)}
+.a-hint{font-family:var(--mono);font-size:10px;color:var(--muted)}
+
+/* Histogram */
+.histogram-outer{background:#040810;border:1px solid #1a2a3a;border-radius:10px;padding:12px}
+.h-title-row{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;
+  color:var(--muted);margin-bottom:8px}
+.histogram-bars{height:100px;display:flex;align-items:flex-end;gap:2px}
+.h-bar{flex:1;border-radius:2px 2px 0 0;min-height:2px;transition:all .4s;background:var(--cyan);opacity:.8}
+.h-bar.p99-zone{background:var(--pink);opacity:1;box-shadow:0 0 8px var(--pink)}
+.h-bar.dimmed{opacity:.2;background:var(--muted)}
+.h-axis{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:4px;padding:0 2px}
+.percentile-tags{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.ptag{font-family:var(--mono);font-size:10px;padding:3px 8px;border-radius:4px;border:1px solid #222;color:var(--muted)}
+.ptag.active{border-color:var(--cyan);color:var(--cyan);background:var(--cy-g)}
+.ptag.danger{border-color:var(--pink);color:var(--pink);background:var(--pk-g)}
+
+/* Centroid viz */
+.centroid-track{height:36px;background:#0a0f1a;border:1px solid #1a2530;border-radius:8px;
+  position:relative;overflow:hidden;margin-top:4px}
+.centroid-dot{position:absolute;top:50%;transform:translateY(-50%);
+  border-radius:50%;border:2px solid var(--cyan);background:rgba(0,240,255,.3);
+  transition:all .4s cubic-bezier(.34,1.56,.64,1)}
+.centroid-dot.extreme{border-color:var(--pink);background:rgba(255,0,60,.4);box-shadow:0 0 8px var(--pink)}
+
+/* Knowledge tooltip */
+.know-btn{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11px;
+  color:var(--purple);border:1px solid rgba(180,79,255,.3);background:rgba(180,79,255,.08);
+  border-radius:4px;padding:3px 8px;cursor:pointer;transition:all .2s;margin-top:4px}
+.know-btn:hover{background:rgba(180,79,255,.2)}
+
+.modal-overlay{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.75);
+  display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+.modal-overlay.open{display:flex}
+.modal{background:#080d18;border:1px solid rgba(180,79,255,.4);border-radius:14px;
+  max-width:560px;width:100%;padding:28px;position:relative;box-shadow:0 20px 60px rgba(180,79,255,.15)}
+.modal-close{position:absolute;top:14px;right:16px;background:none;border:none;color:var(--muted);
+  font-size:20px;cursor:pointer;transition:color .2s}
+.modal-close:hover{color:var(--text)}
+.modal h2{font-family:var(--head);font-size:18px;color:var(--purple);margin-bottom:16px}
+.modal p{font-size:13.5px;line-height:1.8;color:#8899aa;margin-bottom:12px}
+.modal p b{color:var(--text)}.modal p .code{font-family:var(--mono);color:var(--cyan);
+  background:rgba(0,240,255,.08);padding:1px 5px;border-radius:3px}
+.modal .math-block{background:#040810;border:1px solid #1a2a3a;border-radius:8px;
+  padding:12px 16px;font-family:var(--mono);font-size:13px;color:var(--yell);
+  margin:10px 0;line-height:1.8}
+
+/* HUD */
+.hud-bar{position:absolute;top:16px;left:16px;display:flex;gap:12px;pointer-events:none;z-index:25}
+.hud-chip{background:rgba(4,8,20,.85);border:1px solid #1a2530;padding:7px 14px;
+  border-radius:8px;font-family:var(--mono);font-size:10px;color:var(--muted);backdrop-filter:blur(6px)}
+.hud-chip .hv{font-size:15px;color:var(--cyan);font-weight:bold;margin-top:3px;transition:color .3s}
+.hud-chip .hv.danger{color:var(--pink)}
+.hud-chip .hv.safe{color:var(--green)}
+
+.restart-chip{background:rgba(4,8,20,.85);border:1px solid #1a2530;padding:7px 14px;
+  border-radius:8px;font-family:var(--mono);font-size:10px;color:var(--muted);
+  cursor:pointer;pointer-events:auto;transition:all .2s}
+.restart-chip:hover{border-color:var(--pink);color:var(--pink)}
+
+/* Toast */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(60px);
+  z-index:999;background:rgba(5,10,20,.95);border:1px solid var(--green);border-radius:10px;
+  padding:12px 20px;font-size:14px;color:var(--green);pointer-events:none;
+  transition:transform .4s cubic-bezier(.175,.885,.32,1.275);
+  box-shadow:0 10px 30px rgba(57,255,20,.15);display:flex;align-items:center;gap:10px;
+  max-width:90vw;text-align:center}
+#toast.show{transform:translateX(-50%) translateY(0)}
+
+/* ═══════════════════════════════
+   FINALE
+═══════════════════════════════ */
+.finale-card{background:rgba(5,8,15,.95);border:1px solid rgba(252,238,10,.4);border-radius:16px;
+  padding:36px;max-width:720px;width:100%;text-align:center;backdrop-filter:blur(12px);
+  box-shadow:0 20px 60px rgba(252,238,10,.1)}
+.f-title{font-family:var(--head);color:var(--yell);font-size:28px;margin-bottom:6px}
+.f-sub{font-family:var(--mono);font-size:12px;color:var(--muted);margin-bottom:28px;letter-spacing:2px}
+.f-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;text-align:left}
+.f-card{background:rgba(255,255,255,.03);border:1px solid #1a2530;border-radius:10px;
+  padding:18px;border-left:3px solid var(--cyan)}
+.f-card.wide{grid-column:span 2;border-left-color:var(--purple)}
+.f-card h3{font-family:var(--mono);font-size:13px;color:var(--cyan);margin-bottom:8px}
+.f-card.wide h3{color:var(--purple)}
+.f-card p{font-size:12.5px;line-height:1.7;color:#7899a8}
+.f-card .tag{display:inline-block;font-family:var(--mono);font-size:10px;padding:2px 6px;
+  border-radius:3px;background:rgba(0,240,255,.1);border:1px solid rgba(0,240,255,.2);
+  color:var(--cyan);margin-top:6px;margin-right:4px}
+
+/* Mobile */
+@media(max-width:900px){
+  #game-ui{flex-direction:column-reverse}
+  .progress-nav{flex-direction:row;width:100%;height:56px;padding:0 16px;border-right:none;border-top:1px solid rgba(255,255,255,.06)}
+  .prog-logo{display:none}.nav-dot{width:40px;height:40px}
+  .panel-left{width:100%;height:60vh;border-right:none;border-top:1px solid rgba(255,255,255,.06)}
+  .panel-right{flex:none;height:40vh}
+  .f-grid{grid-template-columns:1fr}.f-card.wide{grid-column:span 1}
+}
+</style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+
+<!-- ═══ INTRO ═══ -->
+<div id="intro" class="screen show">
+  <div class="logo">DATA FORGE</div>
+  <div class="logo-sub">A.Q.P. PROTOCOL · 星際數據精煉廠 v2.0</div>
+  <div class="intro-brief">
+    <div class="brief-ttl">⚠️ 緊急任務簡報</div>
+    <div class="brief-body">
+      指揮官！宇宙射線引發「<b>無限數據流</b>」衝擊——每秒湧入數千筆隕石資料！<br>
+      傳統方法想把所有數據存進陣列，記憶體將在 <span class="hi">30 秒內爆炸</span>！<br><br>
+      解決之道是 <b>近似查詢處理 (AQP)</b>：<br>
+      犧牲極小精準度，換取 <span class="hi">O(1) 超低記憶體</span> 與萬倍速度提升。
+      <div class="steps">
+        <div class="step-row"><div class="step-num">1</div><div><b>Welford's Method</b> — 不存任何原始值，即時算出精確的平均數與標準差</div></div>
+        <div class="step-row"><div class="step-num">2</div><div><b>Count-Min Sketch</b> — 用 Hash 矩陣在 O(1) 時間估算任意物件的出現頻率</div></div>
+        <div class="step-row"><div class="step-num">3</div><div><b>t-Digest / Histogram</b> — 壓縮數百萬筆數值，精準估算 P99 極端危險值</div></div>
+      </div>
+    </div>
+  </div>
+  <button class="start-btn" onclick="startGame()">▶ 啟動精煉廠</button>
+</div>
+
+<!-- ═══ GAME UI ═══ -->
+<div id="game-ui" class="screen">
+  <!-- Progress nav -->
+  <div class="progress-nav">
+    <div class="prog-logo">AQP</div>
+    <div class="nav-dot" id="nav1">⚡<div class="dot-lbl">Welford</div></div>
+    <div class="nav-dot" id="nav2">📊<div class="dot-lbl">CMS</div></div>
+    <div class="nav-dot" id="nav3">🔮<div class="dot-lbl">tDigest</div></div>
+  </div>
+
+  <!-- Left panel -->
+  <div class="panel-left">
+
+    <!-- ─── STAGE 1: Welford ─── -->
+    <div id="ui-stage1" class="stage-content active">
+      <div>
+        <div class="stage-tag">MODULE 01 / WELFORD'S METHOD</div>
+        <div class="stage-title t-pink">記憶體溢位危機</div>
+      </div>
+
+      <div class="info-box alert" id="s1-alert">
+        📛 <b>警告：</b> 傳統陣列正在儲存每一顆隕石重量！<br>
+        記憶體隨 N 線性暴增，系統 30 秒後崩潰！
+      </div>
+
+      <!-- Memory viz -->
+      <div class="mem-section">
+        <div class="mem-row">
+          <div class="mem-label-row">
+            <span style="color:var(--pink)">傳統 Array.push() ← O(N) 記憶體</span>
+            <span id="mem-bad-txt" style="color:var(--pink)">0 MB</span>
+          </div>
+          <div class="mem-bar-wrap">
+            <div class="mem-bar bad" id="mem-bad" style="width:2%"></div>
+            <div class="mem-lbl-overlay" id="mem-bad-lbl"></div>
+          </div>
+        </div>
+        <div class="mem-row">
+          <div class="mem-label-row">
+            <span style="color:var(--green)">Welford 僅需 3 個變數 → O(1)</span>
+            <span id="mem-good-txt" style="color:var(--muted)">休眠中</span>
+          </div>
+          <div class="mem-bar-wrap">
+            <div class="mem-bar sleeping" id="mem-good"></div>
+            <div class="mem-lbl-overlay" id="mem-good-lbl">等待啟動...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Formula box — live updating -->
+      <div class="formula-box" id="welford-formula">
+        <div class="fbox-title">WELFORD 遞迴更新式 (每收到新值 x 即執行)</div>
+        <div class="formula">N &nbsp;&nbsp;= <span class="val" id="f-n">0</span> <span class="op">← 計數器</span></div>
+        <div class="formula">δ₁ = x − <span class="var">Mean</span> &nbsp;= <span class="val" id="f-d1">—</span></div>
+        <div class="formula"><span class="var">Mean</span> += δ₁ ÷ N &nbsp;→ <span class="val" id="f-mean">0.000</span></div>
+        <div class="formula">δ₂ = x − <span class="var">Mean</span>&nbsp;= <span class="val" id="f-d2">—</span></div>
+        <div class="formula"><span class="var">M2</span> += δ₁ × δ₂ &nbsp;→ <span class="val" id="f-m2">0.000</span></div>
+        <div class="formula" style="margin-top:8px;border-top:1px solid #1a2a3a;padding-top:8px">
+          <span class="new">σ² = M2 ÷ (N−1)</span> &nbsp;→ <span class="val" id="f-var">—</span>
+        </div>
+      </div>
+
+      <!-- Manual step demo -->
+      <div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:6px;letter-spacing:1px">
+          🔬 手動輸入一個值，觀察公式如何更新：
+        </div>
+        <div class="demo-input-row">
+          <input class="demo-input" id="manual-val" type="number" placeholder="輸入任意數字（例如 42）" min="1" max="9999">
+          <button class="demo-btn" onclick="manualWelford()">送入 →</button>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-lbl">隕石總數 N</div><div class="stat-val" id="s1-n">0</div></div>
+        <div class="stat-card"><div class="stat-lbl">即時平均 μ</div><div class="stat-val" id="s1-mean">—</div></div>
+        <div class="stat-card"><div class="stat-lbl">標準差 σ</div><div class="stat-val" id="s1-std" style="color:var(--cyan)">—</div></div>
+        <div class="stat-card"><div class="stat-lbl">記憶體(僅3變數)</div><div class="stat-val" id="s1-mem" style="color:var(--green)">24 B</div></div>
+      </div>
+
+      <button class="action-btn" id="btn-welford" onclick="activateWelford()">⚡ 啟動 Welford 演算法 (自動串流模式)</button>
+      <button class="know-btn" onclick="openModal('modal-welford')">💡 深入理解 Welford 原理</button>
+      <button class="next-btn" id="next-1" onclick="nextStage(2)">進入下一關：頻率過濾 ➔</button>
+    </div>
+
+    <!-- ─── STAGE 2: Count-Min Sketch ─── -->
+    <div id="ui-stage2" class="stage-content">
+      <div>
+        <div class="stage-tag">MODULE 02 / COUNT-MIN SKETCH</div>
+        <div class="stage-title t-pink">外星訊號頻率解析</div>
+      </div>
+
+      <div class="info-box">
+        📡 偵測到大量太空物體湧入！我們 <b>沒有足夠記憶體建立字典 (HashMap)</b>。
+        啟動 <b>Count-Min Sketch</b> 矩陣，用 3 個 Hash Function 估算各物體出現頻率！
+      </div>
+
+      <!-- CMS Matrix -->
+      <div class="cms-wrap">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:8px">
+          CMS TABLE — 3 Hash Functions × 5 Buckets
+        </div>
+        <div class="cms-hash-labels" id="cms-header">
+          <div class="cms-hash-lbl">col 0</div><div class="cms-hash-lbl">col 1</div>
+          <div class="cms-hash-lbl">col 2</div><div class="cms-hash-lbl">col 3</div><div class="cms-hash-lbl">col 4</div>
+        </div>
+        <div id="cms-matrix"></div>
+      </div>
+
+      <!-- Alien cards -->
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px">
+        點擊目標物體 → 查看 CMS 估算頻率：
+      </div>
+      <div class="alien-cards">
+        <div class="alien-card" onclick="checkCMS(0)">
+          <div class="a-icon">🛸</div>
+          <div style="flex:1"><div class="a-name">阿爾法飛碟</div><div class="a-hint">hash key = 1</div></div>
+          <div class="a-count" id="cms-c0">點擊查詢</div>
+        </div>
+        <div class="alien-card" onclick="checkCMS(1)">
+          <div class="a-icon">🛰️</div>
+          <div style="flex:1"><div class="a-name">人造衛星</div><div class="a-hint">hash key = 2</div></div>
+          <div class="a-count" id="cms-c1">點擊查詢</div>
+        </div>
+        <div class="alien-card" onclick="checkCMS(2)" style="opacity:.6">
+          <div class="a-icon">🪨</div>
+          <div style="flex:1"><div class="a-name">普通隕石</div><div class="a-hint">hash key = 3 (與飛碟碰撞!)</div></div>
+          <div class="a-count" id="cms-c2">點擊查詢</div>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-lbl">矩陣大小 (固定)</div><div class="stat-val" style="color:var(--green)">60 B</div></div>
+        <div class="stat-card"><div class="stat-lbl">物件總量</div><div class="stat-val" id="s2-total">0</div></div>
+      </div>
+
+      <button class="know-btn" onclick="openModal('modal-cms')">💡 深入理解碰撞與 Min 的秘密</button>
+      <button class="next-btn" id="next-2" onclick="nextStage(3)">進入下一關：分位數壓縮 ➔</button>
+    </div>
+
+    <!-- ─── STAGE 3: t-Digest ─── -->
+    <div id="ui-stage3" class="stage-content">
+      <div>
+        <div class="stage-tag">MODULE 03 / T-DIGEST & HISTOGRAM SKETCH</div>
+        <div class="stage-title t-cyan">防護罩校準 — 分位數</div>
+      </div>
+
+      <div class="info-box">
+        ☄️ 隕石質量分佈<b>極度偏態</b>！99% 的隕石很小，但 1% 的超巨型隕石會摧毀飛船。<br>
+        <b>平均數完全無用</b>——我們需要 <b>P99 (99百分位數)</b> 來設定防護罩上限！
+      </div>
+
+      <!-- Why mean fails -->
+      <div class="formula-box">
+        <div class="fbox-title">⚠️ 為什麼平均數會誤導我們？</div>
+        <div class="formula" style="color:#8899aa;font-size:12px">
+          假設 100 顆隕石：99 顆 = 1 噸，1 顆 = 901 噸<br>
+          <span class="val">平均數 = (99×1 + 901) / 100 = 10 噸</span><br>
+          <span class="new">但 P99 = 901 噸！防護罩設 10 噸你就死了！</span>
+        </div>
+      </div>
+
+      <!-- Histogram -->
+      <div class="histogram-outer">
+        <div class="h-title-row">
+          <span>質量密度分佈 (Histogram Sketch)</span>
+          <span id="hist-status" style="color:var(--muted)">等待啟動...</span>
+        </div>
+        <div class="histogram-bars" id="histogram"></div>
+        <div class="h-axis">
+          <span>0</span><span>輕</span><span>中</span><span>重</span><span>極重</span>
+        </div>
+        <div class="percentile-tags">
+          <div class="ptag active">P25: <span id="h-p25">—</span></div>
+          <div class="ptag active">P50: <span id="h-p50">—</span></div>
+          <div class="ptag active">P75: <span id="h-p75">—</span></div>
+          <div class="ptag danger">P99: <span id="h-p99">— ← 防護罩校準點</span></div>
+        </div>
+      </div>
+
+      <!-- Centroid viz -->
+      <div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:6px">
+          t-Digest 質心壓縮 (兩端密集 / 中間稀疏)：
+        </div>
+        <div class="centroid-track" id="centroid-track"></div>
+        <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:4px">
+          <span style="color:var(--pink)">← 極端值 (精細)</span>
+          <span>中間 (粗略)</span>
+          <span style="color:var(--pink)">(精細) 極端值 →</span>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card" style="border-color:var(--cyan)">
+          <div class="stat-lbl">中位數 P50</div>
+          <div class="stat-val" id="s3-p50" style="color:var(--cyan)">—</div>
+        </div>
+        <div class="stat-card" style="border-color:var(--pink)">
+          <div class="stat-lbl" style="color:var(--pink)">極端危險 P99</div>
+          <div class="stat-val" id="s3-p99" style="color:var(--pink)">—</div>
+        </div>
+      </div>
+
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.6;
+        background:#040810;padding:10px;border-radius:6px;border:1px solid #1a2a3a">
+        <span style="color:var(--cyan)">BigQuery:</span> APPROX_QUANTILES(col, 100)[OFFSET(99)]<br>
+        <span style="color:#E25A1C">Spark:</span> df.stat.approxQuantile("col", Array(0.99), 0.01)
+      </div>
+
+      <button class="action-btn" id="btn-tdigest" onclick="activateTDigest()">🔮 啟動 t-Digest 質心聚合</button>
+      <button class="know-btn" onclick="openModal('modal-tdigest')">💡 深入理解 t-Digest 原理</button>
+      <button class="next-btn" id="next-3" onclick="finishGame()">🏆 完成任務，查看總結報告 ➔</button>
+    </div>
+
+  </div><!-- /panel-left -->
+
+  <!-- HUD on 3D canvas side -->
+  <div class="panel-right">
+    <div class="hud-bar">
+      <div class="hud-chip">SYS_MEM<div class="hud-val" id="hud-mem">0%</div></div>
+      <div class="hud-chip">DATA_RATE<div class="hud-val" id="hud-rate">0 pkt/s</div></div>
+      <div class="restart-chip" onclick="resetGame()">↺ 重新啟動</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ FINALE ═══ -->
+<div id="finale" class="screen">
+  <div class="finale-card">
+    <div style="font-size:56px;margin-bottom:8px">🏆</div>
+    <div class="f-title">系統保衛成功！</div>
+    <div class="f-sub">AQP PROTOCOL COMPLETE — 近似查詢處理核心技術已掌握</div>
+    <div class="f-grid">
+      <div class="f-card">
+        <h3>⚡ Welford's Method</h3>
+        <p>只保存 3 個數字 (N, Mean, M2)，不存任何原始資料。每次新值進來就用遞迴式更新，記憶體永遠是 O(1)，而且數學上完全等價於對全部資料重新計算！</p>
+        <span class="tag">Online Algorithm</span><span class="tag">O(1) Space</span><span class="tag">Numerically Stable</span>
+      </div>
+      <div class="f-card">
+        <h3>📊 Count-Min Sketch</h3>
+        <p>3 個 Hash Function 對應 3 行格子，每個新物件同時更新 3 個格子。查詢時取 3 格中的「最小值 (Min)」，這個最小值一定 ≥ 真實次數，是最精準的上界估算！</p>
+        <span class="tag">Probabilistic</span><span class="tag">Sub-linear Space</span><span class="tag">Always Overestimate</span>
+      </div>
+      <div class="f-card wide">
+        <h3>🔮 t-Digest &amp; Approximate Histogram</h3>
+        <p>將數百萬個值壓縮成幾百個「質心 (Centroid)」。關鍵在於它不是均勻壓縮——兩端 (P1, P99) 用超小的質心精細表示，中間 (P50) 則用大質心粗略表示。這讓極端值的估算精準度遠高於中位數，完美符合實際需求。BigQuery 和 Spark 的 approxQuantile 都基於此原理！</p>
+        <span class="tag">t-Digest</span><span class="tag">Non-uniform Compression</span><span class="tag">BigQuery ✓</span><span class="tag">Apache Spark ✓</span>
+      </div>
+    </div>
+    <button class="start-btn" style="margin-top:32px" onclick="resetGame()">↺ 再次挑戰</button>
+  </div>
+</div>
+
+<!-- ═══ KNOWLEDGE MODALS ═══ -->
+<div class="modal-overlay" id="modal-welford">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-welford')">✕</button>
+    <h2>⚡ 深入理解 Welford's Method</h2>
+    <p>直覺上計算平均數，我們會用 <b>Sum ÷ N</b>。但這需要儲存所有資料，或至少記住 Sum（大數相加會有浮點數誤差）。</p>
+    <p>Welford (1962) 發現了一個神奇的遞迴等式：</p>
+    <div class="math-block">
+      新值到達：x<br>
+      δ₁ = x − Mean_old<br>
+      Mean_new = Mean_old + δ₁ / N<br>
+      δ₂ = x − Mean_new<br>
+      M2_new = M2_old + δ₁ × δ₂<br>
+      <br>
+      取樣變異數 σ² = M2 / (N−1)
+    </div>
+    <p>這個公式<b>數學上完全等價</b>於重新用全部資料計算，且比累加 Sum 更穩定（不會因大數相加而失去精度）。只需 3 個變數！</p>
+    <p><b>應用場景：</b> 資料庫的 Online Statistics、Spark Streaming 的即時指標、監控系統的 rolling mean。</p>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-cms">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-cms')">✕</button>
+    <h2>📊 Count-Min Sketch 的碰撞原理</h2>
+    <p>假設有 3 個 Hash Function，每個 Function 把物件映射到 5 個格子中的一個並累加計數。</p>
+    <p><b>問題：</b> 不同物件可能被映射到「同一個格子」（碰撞/哈希衝突），造成格子數值被高估。</p>
+    <p><b>天才解法：</b> 同時用 3 個不同的 Hash Function 映射到不同的行。雖然每行都可能有碰撞，但 <b>3 個格子全部同時碰撞的機率極低</b>。</p>
+    <div class="math-block">
+      查詢物件 x 的頻率：<br>
+      h₁(x)=col_a, h₂(x)=col_b, h₃(x)=col_c<br>
+      估算頻率 = MIN(table[0][a], table[1][b], table[2][c])<br>
+      <br>
+      保證：估算值 ≥ 真實值（只高估，不低估）
+    </div>
+    <p>記憶體只需要 <code class="code">3 × 5 = 15 個整數</code>，不管流進來多少種物件都不會增加！</p>
+    <p><b>應用：</b> Twitter 熱門話題統計、網路封包頻率分析、資料庫 JOIN 優化的 Bloom Filter 變體。</p>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-tdigest">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-tdigest')">✕</button>
+    <h2>🔮 t-Digest 的質心壓縮</h2>
+    <p>找精確 P99 需要對所有資料排序，是 O(N log N) 的問題。對串流資料根本做不到。</p>
+    <p><b>t-Digest 的想法：</b> 把相近的值「揉」成一個質心 (Centroid)，記錄 (平均值, 筆數)。</p>
+    <div class="math-block">
+      質心 C_i = (mean_i, count_i)<br>
+      整體資料 ≈ {C₁, C₂, ..., C_k}  （k << N）<br>
+      <br>
+      壓縮比例函數 q (百分位)：<br>
+      兩端 q→0 或 q→1：質心 count 極小（精細）<br>
+      中間 q→0.5：質心 count 可以很大（粗略）
+    </div>
+    <p>這個「<b>兩端精細，中間粗略</b>」的特性，讓 P99/P1 的估算誤差遠小於 P50，完全符合工程實際需求（我們更在意極端情況！）。</p>
+    <p><b>應用：</b> Google BigQuery 的 <code class="code">APPROX_QUANTILES()</code>、Apache Spark 的 <code class="code">approxQuantile()</code>、Prometheus 的 histogram_quantile 都是類似原理。</p>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast">✔️ 指令已確認</div>
+
+<script>
+'use strict';
+// ══════════════════════════════════════════════
+// GLOBAL STATE
+// ══════════════════════════════════════════════
+let G = {};
+function initState() {
+  G = {
+    stage: 0,
+    animRunning: false,
+    animId: null,
+    // Welford
+    welfordActive: false,
+    wN: 0, wMean: 0, wM2: 0,
+    badMem: 2,
+    // CMS
+    cmsTable: [],
+    actualCounts: [0,0,0],
+    cmsChecked: false,
+    // tDigest
+    tActivated: false,
+    // Misc
+    hudInterval: null,
+  };
+}
+initState();
+
+// ══════════════════════════════════════════════
+// THREE.JS BACKGROUND
+// ══════════════════════════════════════════════
+const canvas3d = document.getElementById('bg-canvas');
+const renderer = new THREE.WebGLRenderer({canvas:canvas3d, antialias:true, alpha:false});
+renderer.setClearColor(0x05050a);
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x05050a, 0.013);
+const camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, 0.1, 1000);
+camera.position.set(0, 8, 38);
+
+const ambient = new THREE.AmbientLight(0xffffff, 0.15);
+scene.add(ambient);
+const dl1 = new THREE.DirectionalLight(0x00f0ff, 1.2);
+dl1.position.set(-20,20,20); scene.add(dl1);
+const dl2 = new THREE.DirectionalLight(0xff003c, 0.7);
+dl2.position.set(20,-10,-20); scene.add(dl2);
+
+const pGeos = [
+  new THREE.DodecahedronGeometry(1,0),
+  new THREE.OctahedronGeometry(1,0),
+  new THREE.BoxGeometry(1.2,1.2,1.2)
+];
+const matRock = new THREE.MeshStandardMaterial({color:0x334455,roughness:.7,metalness:.3});
+const matUFO  = new THREE.MeshStandardMaterial({color:0x00f0ff,emissive:0x00f0ff,emissiveIntensity:.6});
+const matSat  = new THREE.MeshStandardMaterial({color:0xfcee0a,emissive:0xfcee0a,emissiveIntensity:.6});
+const matBig  = new THREE.MeshStandardMaterial({color:0xff003c,emissive:0xff003c,emissiveIntensity:.8});
+
+let particles=[];
+function spawnParticles() {
+  for(let i=0;i<280;i++) {
+    const r = Math.random();
+    const isUFO = r<0.08, isSat = r<0.13 && r>=0.08;
+    let mat = isUFO ? matUFO : (isSat ? matSat : matRock);
+    const geo = pGeos[Math.floor(Math.random()*3)];
+    const m = new THREE.Mesh(geo, mat.clone());
+    const bigChance = Math.random()<0.04;
+    m.position.set((Math.random()-.5)*60,(Math.random()-.5)*36,(Math.random()-.5)*200-50);
+    m.userData = {
+      speedZ: .4+Math.random()*1.4,
+      rotX: (Math.random()-.5)*.04,
+      rotY: (Math.random()-.5)*.04,
+      type: isUFO?0:(isSat?1:2),
+      big: bigChance
+    };
+    const sc = bigChance ? 2.5+Math.random()*2 : 0.4+Math.random()*1.2;
+    m.scale.setScalar(sc);
+    if(bigChance) m.material = matRock.clone();
+    scene.add(m);
+    particles.push(m);
+  }
+}
+spawnParticles();
+
+const grid = new THREE.GridHelper(200,40,0x00f0ff,0x0a1520);
+grid.position.y=-18; grid.material.opacity=.15; grid.material.transparent=true;
+scene.add(grid);
+
+let camAutoRotate = 0;
+function renderLoop() {
+  G.animId = requestAnimationFrame(renderLoop);
+  camAutoRotate += 0.003;
+  camera.position.x = Math.sin(camAutoRotate)*5;
+  camera.position.y = 8 + Math.sin(camAutoRotate*.5)*3;
+  camera.lookAt(0,0,0);
+
+  particles.forEach(p => {
+    p.position.z += p.userData.speedZ;
+    p.rotation.x += p.userData.rotX;
+    p.rotation.y += p.userData.rotY;
+    if(p.position.z > 48) {
+      p.position.z = -180;
+      p.position.x = (Math.random()-.5)*60;
+      p.position.y = (Math.random()-.5)*36;
+      onParticleReset(p);
+    }
+  });
+  renderer.render(scene, camera);
+}
+
+function onParticleReset(p) {
+  if(G.stage===1 && !G.welfordActive) {
+    G.badMem = Math.min(G.badMem+0.22, 95);
+    updateBadMem();
+  }
+  if(G.stage===1 && G.welfordActive) {
+    autoWelford(p.userData.big ? p.scale.x*180 : p.scale.x*80);
+  }
+  if(G.stage===2) autoCMS(p.userData.type);
+}
+
+window.addEventListener('resize',()=>{
+  renderer.setSize(innerWidth,innerHeight);
+  camera.aspect=innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+});
+renderer.setSize(innerWidth,innerHeight);
+
+// ══════════════════════════════════════════════
+// UTILITY
+// ══════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('show'));
+  document.getElementById(id).classList.add('show');
+}
+function toast(msg, color='var(--green)') {
+  const t=document.getElementById('toast');
+  t.innerHTML=msg; t.style.borderColor=color; t.style.color=color;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer=setTimeout(()=>t.classList.remove('show'),3200);
+}
+function openModal(id){document.getElementById(id).classList.add('open')}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+document.querySelectorAll('.modal-overlay').forEach(m=>{
+  m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open')});
+});
+
+// ══════════════════════════════════════════════
+// GAME START / RESET
+// ══════════════════════════════════════════════
+function startGame() {
+  showScreen('game-ui');
+  switchStage(1);
+  if(!G.animRunning){G.animRunning=true;renderLoop();}
+  G.hudInterval = setInterval(()=>{
+    document.getElementById('hud-rate').textContent = Math.floor(780+Math.random()*400)+' pkt/s';
+  }, 600);
+}
+
+function resetGame() {
+  // Cancel animation
+  if(G.animId) cancelAnimationFrame(G.animId);
+  G.animId=null; G.animRunning=false;
+  clearInterval(G.hudInterval);
+
+  // Clear particles from scene
+  particles.forEach(p=>scene.remove(p));
+  particles=[];
+
+  // Reset state
+  initState();
+
+  // Reset UI
+  spawnParticles();
+
+  // Reset stage contents
+  document.querySelectorAll('.stage-content').forEach(e=>{e.classList.remove('active');e.scrollTop=0});
+  document.querySelectorAll('.nav-dot').forEach(d=>d.classList.remove('active','done'));
+  document.querySelectorAll('.next-btn').forEach(b=>b.style.display='none');
+
+  // Reset welford UI
+  document.getElementById('btn-welford').className='action-btn';
+  document.getElementById('btn-welford').innerHTML='⚡ 啟動 Welford 演算法 (自動串流模式)';
+  document.getElementById('s1-alert').className='info-box alert';
+  document.getElementById('s1-alert').innerHTML='📛 <b>警告：</b> 傳統陣列正在儲存每一顆隕石重量！<br>記憶體隨 N 線性暴增，系統 30 秒後崩潰！';
+  document.getElementById('mem-bad').style.width='2%';
+  document.getElementById('mem-bad-txt').textContent='0 MB';
+  document.getElementById('mem-good').className='mem-bar sleeping';
+  document.getElementById('mem-good').style.width='8%';
+  document.getElementById('mem-good-lbl').textContent='等待啟動...';
+  document.getElementById('mem-good-txt').textContent='休眠中';
+  document.getElementById('hud-mem').textContent='0%';
+  document.getElementById('hud-mem').className='hv';
+  ['s1-n','s1-mean','s1-std'].forEach(id=>document.getElementById(id).textContent='—');
+  document.getElementById('s1-mem').textContent='24 B';
+  ['f-n','f-d1','f-mean','f-d2','f-m2','f-var'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.textContent=id==='f-n'?'0':id==='f-mean'?'0.000':id==='f-m2'?'0.000':'—';
+  });
+
+  // Reset tdigest UI
+  document.getElementById('btn-tdigest').className='action-btn';
+  document.getElementById('btn-tdigest').innerHTML='🔮 啟動 t-Digest 質心聚合';
+  ['s3-p50','s3-p99','h-p25','h-p50','h-p75','h-p99'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.textContent=id==='h-p99'?'— ← 防護罩校準點':'—';
+  });
+
+  showScreen('game-ui');
+  startGame();
+}
+
+function switchStage(n) {
+  G.stage=n;
+  document.querySelectorAll('.stage-content').forEach(e=>e.classList.remove('active'));
+  document.getElementById(`ui-stage${n}`).classList.add('active');
+
+  // Update nav
+  for(let i=1;i<=3;i++){
+    const dot=document.getElementById(`nav${i}`);
+    dot.classList.remove('active','done');
+    if(i<n) dot.classList.add('done');
+    else if(i===n) dot.classList.add('active');
+  }
+
+  if(n===2) initCMS();
+  if(n===3) initHistogram();
+}
+function nextStage(n){switchStage(n);}
+
+// ══════════════════════════════════════════════
+// STAGE 1 — WELFORD
+// ══════════════════════════════════════════════
+function updateBadMem() {
+  const pct=G.badMem;
+  const bar=document.getElementById('mem-bad');
+  bar.style.width=pct+'%';
+  document.getElementById('mem-bad-txt').textContent=Math.floor(pct*11)+' MB';
+  document.getElementById('hud-mem').textContent=Math.floor(pct)+'%';
+  const hv=document.getElementById('hud-mem');
+  hv.className = pct>80?'hv danger':'hv';
+  // pulse animation
+  bar.classList.remove('pulse');
+  void bar.offsetWidth;
+  bar.classList.add('pulse');
+}
+
+function welfordStep(val) {
+  G.wN++;
+  const d1 = val - G.wMean;
+  G.wMean += d1 / G.wN;
+  const d2 = val - G.wMean;
+  G.wM2 += d1*d2;
+
+  const variance = G.wN>1 ? G.wM2/(G.wN-1) : 0;
+  const std = Math.sqrt(variance);
+
+  // Update formula display
+  setFV('f-n', G.wN);
+  setFV('f-d1', d1.toFixed(2));
+  setFV('f-mean', G.wMean.toFixed(3));
+  setFV('f-d2', d2.toFixed(2));
+  setFV('f-m2', G.wM2.toFixed(2));
+  setFV('f-var', variance.toFixed(2));
+
+  if(G.wN % 3 === 0) {
+    flashStat('s1-n', G.wN);
+    flashStat('s1-mean', G.wMean.toFixed(2));
+    if(G.wN>1) flashStat('s1-std', std.toFixed(2));
+  }
+}
+
+function setFV(id, v) {
+  const el=document.getElementById(id);
+  if(el){el.textContent=v;el.classList.remove('formula-highlight');void el.offsetWidth;el.classList.add('formula-highlight');}
+}
+function flashStat(id,v){
+  const el=document.getElementById(id);
+  if(el){el.textContent=v;el.classList.remove('changed');void el.offsetWidth;el.classList.add('changed');}
+}
+
+function manualWelford() {
+  const inp=document.getElementById('manual-val');
+  const v=parseFloat(inp.value);
+  if(isNaN(v)||v<=0){toast('請輸入一個正數！','var(--pink)');return;}
+  welfordStep(v);
+  toast(`✅ x = ${v} 已套入公式，觀察上方數值變化！`);
+  inp.value='';
+}
+
+function activateWelford() {
+  G.welfordActive=true;
+  document.getElementById('btn-welford').classList.add('solved');
+  document.getElementById('btn-welford').innerHTML='✔️ Welford 串流模式運行中 (O(1))';
+  document.getElementById('s1-alert').className='info-box success';
+  document.getElementById('s1-alert').innerHTML='✅ <b>記憶體穩定：</b> Welford 已接管！僅保存 N, Mean, M2 三個數字，歷史資料即時丟棄。';
+
+  const goodBar=document.getElementById('mem-good');
+  goodBar.className='mem-bar good';
+  goodBar.style.width='8%';
+  document.getElementById('mem-good-lbl').textContent='固定 24 Bytes';
+  document.getElementById('mem-good-txt').textContent='24 Bytes (固定)';
+  document.getElementById('mem-good-txt').style.color='var(--green)';
+
+  // Freeze bad mem
+  document.getElementById('mem-bad').style.width='95%';
+  document.getElementById('mem-bad').classList.remove('bad');
+  document.getElementById('mem-bad').style.background='#334';
+
+  document.getElementById('hud-mem').textContent='3%';
+  document.getElementById('hud-mem').className='hv safe';
+
+  toast('⚡ Welford 演算法已啟動！觀察公式即時更新！');
+  document.getElementById('next-1').style.display='block';
+  document.getElementById('s1-mem').textContent='24 B ✓';
+}
+
+function autoWelford(val) {
+  welfordStep(val);
+}
+
+// ══════════════════════════════════════════════
+// STAGE 2 — COUNT-MIN SKETCH
+// ══════════════════════════════════════════════
+const CMS_W=5, CMS_D=3;
+const HASH_SEEDS=[7,13,23];
+function hashCMS(key,row){return(key*HASH_SEEDS[row]+row*3)%CMS_W;}
+
+function initCMS(){
+  G.cmsTable=Array(CMS_D).fill(0).map(()=>Array(CMS_W).fill(0));
+  G.actualCounts=[0,0,0];
+  G.cmsChecked=false;
+  const mat=document.getElementById('cms-matrix');
+  mat.innerHTML='';
+  for(let d=0;d<CMS_D;d++){
+    const lbl=document.createElement('div');
+    lbl.className='cms-row-label';
+    lbl.textContent=`Hash h${d+1}(x) [seed=${HASH_SEEDS[d]}]`;
+    mat.appendChild(lbl);
+    const row=document.createElement('div');
+    row.className='cms-row';
+    for(let w=0;w<CMS_W;w++){
+      const cell=document.createElement('div');
+      cell.className='cms-cell';
+      cell.id=`cms-${d}-${w}`;
+      cell.textContent='0';
+      row.appendChild(cell);
+    }
+    mat.appendChild(row);
+  }
+  document.getElementById('s2-total').textContent='0';
+}
+
+function cmsInsert(type){
+  const key=type+1;
+  G.actualCounts[type]++;
+  let total=G.actualCounts.reduce((a,b)=>a+b,0);
+  for(let d=0;d<CMS_D;d++){
+    const w=hashCMS(key,d);
+    G.cmsTable[d][w]++;
+    const cell=document.getElementById(`cms-${d}-${w}`);
+    if(cell){
+      cell.textContent=G.cmsTable[d][w];
+      cell.classList.remove('bump');void cell.offsetWidth;cell.classList.add('bump');
+    }
+  }
+  if(total%8===0) document.getElementById('s2-total').textContent=total;
+}
+
+function autoCMS(type){cmsInsert(type);}
+
+function checkCMS(type) {
+  // Clear highlights
+  document.querySelectorAll('.cms-cell').forEach(c=>c.classList.remove('highlighted','is-min'));
+  const key=type+1;
+  let minVal=Infinity, minId='';
+  for(let d=0;d<CMS_D;d++){
+    const w=hashCMS(key,d);
+    const count=G.cmsTable[d][w];
+    const cell=document.getElementById(`cms-${d}-${w}`);
+    if(cell) cell.classList.add('highlighted');
+    if(count<minVal){minVal=count;minId=`cms-${d}-${w}`;}
+  }
+  setTimeout(()=>{
+    const minCell=document.getElementById(minId);
+    if(minCell) minCell.classList.add('is-min');
+    const names=['🛸 阿爾法飛碟','🛰️ 人造衛星','🪨 普通隕石'];
+    document.getElementById(`cms-c${type}`).textContent=`估算: ≤ ${minVal}`;
+    toast(`📊 ${names[type]} — CMS 估算頻率 ≤ ${minVal}（綠色格子 = Min = 最佳估算）`);
+    document.getElementById('next-2').style.display='block';
+  },500);
+}
+
+// ══════════════════════════════════════════════
+// STAGE 3 — t-DIGEST / HISTOGRAM
+// ══════════════════════════════════════════════
+function initHistogram(){
+  const cont=document.getElementById('histogram');
+  cont.innerHTML='';
+  const bins=24;
+  for(let i=0;i<bins;i++){
+    const bar=document.createElement('div');
+    bar.className='h-bar';
+    // Log-normal-like distribution (right-skewed)
+    let h = Math.max(2, (1/(i*0.4+0.8))*85*(0.7+Math.random()*0.6));
+    if(i>=20) h=3+Math.random()*8; // long tail (big rocks)
+    bar.style.height=h+'%';
+    cont.appendChild(bar);
+  }
+  initCentroids();
+}
+
+function initCentroids(){
+  const track=document.getElementById('centroid-track');
+  track.innerHTML='';
+  // Place centroids: dense at edges, sparse in middle
+  const positions=[2,5,9,15,22,30,38,46,54,62,70,78,85,91,95,98];
+  positions.forEach((pos,i)=>{
+    const dot=document.createElement('div');
+    dot.className='centroid-dot';
+    const isExtreme=i<3||i>12;
+    if(isExtreme) dot.classList.add('extreme');
+    const size=isExtreme?8:16+Math.random()*8;
+    dot.style.width=dot.style.height=size+'px';
+    dot.style.left=`calc(${pos}% - ${size/2}px)`;
+    track.appendChild(dot);
+  });
+}
+
+function activateTDigest(){
+  G.tActivated=true;
+  document.getElementById('btn-tdigest').classList.add('solved');
+  document.getElementById('btn-tdigest').innerHTML='✔️ t-Digest 聚合完成';
+  document.getElementById('hist-status').textContent='分析完成';
+  document.getElementById('hist-status').style.color='var(--green)';
+
+  // Animate histogram
+  const bars=document.querySelectorAll('.h-bar');
+  bars.forEach((bar,i)=>{
+    setTimeout(()=>{
+      if(i>=20){bar.classList.add('p99-zone');}
+      else if(i>4&&i<18){bar.classList.add('dimmed');}
+    }, i*30);
+  });
+
+  // Compute percentile values based on Welford data or defaults
+  const base = G.wMean>5 ? G.wMean : 45;
+  const p25=(base*0.4).toFixed(1), p50=(base*0.9).toFixed(1);
+  const p75=(base*1.8).toFixed(1), p99=(base*9.2).toFixed(1);
+
+  document.getElementById('h-p25').textContent=p25+' 噸';
+  document.getElementById('h-p50').textContent=p50+' 噸';
+  document.getElementById('h-p75').textContent=p75+' 噸';
+
+  document.getElementById('s3-p50').textContent=p50+' 噸';
+
+  // Slot machine effect for P99
+  let cnt=0;
+  const iv=setInterval(()=>{
+    const fake=(Math.random()*1200).toFixed(1);
+    document.getElementById('s3-p99').textContent=fake+' 噸';
+    document.getElementById('h-p99').textContent=fake+' 噸 ← 防護罩校準點';
+    cnt++;
+    if(cnt>18){
+      clearInterval(iv);
+      document.getElementById('s3-p99').textContent=p99+' 噸';
+      document.getElementById('h-p99').textContent=p99+' 噸 ← 防護罩校準點';
+      toast('🎯 防護罩已校準至 P99！任務完成！','var(--pink)');
+      document.getElementById('next-3').style.display='block';
+
+      // Light up big particles pink
+      particles.forEach(p=>{
+        if(p.userData.big){
+          p.material.color.setHex(0xff003c);
+          p.material.emissive&&p.material.emissive.setHex(0xff003c);
+        }
+      });
+    }
+  },55);
+}
+
+function finishGame(){showScreen('finale');}
+
+// ══════════════════════════════════════════════
+// KEYBOARD SHORTCUTS
+// ══════════════════════════════════════════════
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&document.getElementById('manual-val')===document.activeElement){
+    manualWelford();
+  }
+  if(e.key==='Escape'){
+    document.querySelectorAll('.modal-overlay').forEach(m=>m.classList.remove('open'));
+  }
+});
+</script>
+</body>
+</html>
