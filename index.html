@@ -76,7 +76,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);overflow
   box-shadow:20px 0 50px rgba(0,0,0,.4);overflow:hidden}
 .panel-right{flex:1;position:relative;pointer-events:none}
 
-.stage-content{display:none;flex-direction:column;gap:16px;padding:20px;overflow-y:auto;height:100%}
+.stage-content{display:none;flex-direction:column;gap:16px;padding:20px;overflow-y:auto;flex:1;min-height:0}
 .stage-content.active{display:flex}
 
 /* Shared components */
@@ -148,7 +148,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);overflow
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(252,238,10,.5)}70%{box-shadow:0 0 0 10px rgba(252,238,10,0)}100%{box-shadow:0 0 0 0 rgba(252,238,10,0)}}
 
 /* CMS grid */
-.cms-wrap{background:#040810;border:1px solid #1a2a3a;border-radius:10px;padding:12px;overflow:hidden}
+.cms-wrap{background:#040810;border:1px solid #1a2a3a;border-radius:10px;padding:12px}
 .cms-hash-labels{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-bottom:4px}
 .cms-hash-lbl{font-family:var(--mono);font-size:9px;color:var(--muted);text-align:center}
 .cms-row{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-bottom:4px}
